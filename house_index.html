@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EstateIQ Kolkata — House Price Estimator</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&family=Inconsolata:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #f5f0e8;
+  --bg2: #ede7d9;
+  --surface: #fff9f2;
+  --surface2: #f9f4eb;
+  --border: #d9cfc0;
+  --border2: #c5b99e;
+  --ink: #1c1208;
+  --ink2: #4a3d28;
+  --muted: #8a7560;
+  --gold: #b8872a;
+  --gold2: #d4a043;
+  --gold-light: rgba(184,135,42,0.12);
+  --shadow: 0 2px 24px rgba(28,18,8,0.08);
+  --shadow2: 0 8px 48px rgba(28,18,8,0.14);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Linen texture */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%23f5f0e8'/%3E%3Crect x='0' y='0' width='1' height='1' fill='%23e8e0d0' opacity='0.4'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%23e8e0d0' opacity='0.3'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0;
+}
+
+/* ── HERO NAV ─────────────────────────────── */
+nav {
+  position: relative; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 48px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(245,240,232,0.9);
+  backdrop-filter: blur(8px);
+}
+
+.nav-logo {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.5rem; font-weight: 600; letter-spacing: 0.04em;
+  color: var(--ink);
+}
+
+.nav-logo span { color: var(--gold); }
+
+.nav-tag {
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--muted); background: var(--bg2);
+  border: 1px solid var(--border); border-radius: 4px; padding: 4px 10px;
+}
+
+/* ── HERO ─────────────────────────────────── */
+.hero {
+  position: relative; z-index: 1;
+  text-align: center; padding: 72px 24px 56px;
+  animation: fadeDown 0.8s ease both;
+}
+
+.hero-eyebrow {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 16px;
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+}
+
+.hero-eyebrow::before, .hero-eyebrow::after {
+  content: ''; flex: 0 0 40px; height: 1px; background: var(--gold);
+}
+
+.hero h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  font-weight: 300; line-height: 1.0; letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.hero h1 em { font-style: italic; color: var(--gold); }
+
+.hero-sub {
+  margin-top: 18px; font-size: 15px; font-weight: 300;
+  color: var(--muted); max-width: 520px; margin-left: auto; margin-right: auto;
+  line-height: 1.7;
+}
+
+.hero-divider {
+  width: 60px; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  margin: 32px auto 0;
+}
+
+/* ── MAIN LAYOUT ──────────────────────────── */
+.main-wrap {
+  position: relative; z-index: 1;
+  max-width: 1100px; margin: 0 auto;
+  padding: 0 24px 80px;
+  display: grid; grid-template-columns: 1fr 340px; gap: 28px;
+  align-items: start;
+}
+
+/* ── FORM PANEL ───────────────────────────── */
+.form-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  animation: riseUp 0.7s ease 0.1s both;
+}
+
+.panel-header {
+  background: var(--ink);
+  padding: 18px 28px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.panel-header-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.2rem; font-weight: 400; color: #fff; letter-spacing: 0.04em;
+}
+
+.panel-header-mono {
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: rgba(255,255,255,0.4);
+}
+
+.form-body { padding: 28px; }
+
+/* Section labels */
+.sec-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--gold);
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 18px; margin-top: 28px;
+}
+
+.sec-label:first-child { margin-top: 0; }
+.sec-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* Core inputs */
+.core-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  margin-bottom: 4px;
+}
+
+.field-full { grid-column: 1 / -1; }
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+
+label {
+  font-size: 11px; font-weight: 500; color: var(--muted);
+  letter-spacing: 0.06em; text-transform: uppercase;
+  display: flex; align-items: center; gap: 6px;
+}
+
+.unit {
+  font-family: 'Inconsolata', monospace; font-size: 9px;
+  background: var(--bg2); border: 1px solid var(--border);
+  color: var(--border2); padding: 1px 5px; border-radius: 3px;
+  text-transform: none; letter-spacing: 0;
+}
+
+input[type="number"],
+input[type="text"],
+select {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 11px 14px;
+  font-family: 'Inconsolata', monospace;
+  font-size: 14px; color: var(--ink);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+  -moz-appearance: textfield;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-light);
+  background: #fff;
+}
+
+input::placeholder { color: var(--border2); }
+
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238a7560' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center;
+  padding-right: 30px; cursor: pointer; appearance: none;
+}
+
+/* Hint */
+.field-hint { font-size: 10px; color: var(--muted); font-weight: 300; }
+
+/* Bedroom pills */
+.bedroom-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.pill-btn {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 3px; padding: 9px 18px;
+  font-family: 'Inconsolata', monospace; font-size: 14px; font-weight: 500;
+  color: var(--ink2); cursor: pointer;
+  transition: all 0.15s;
+}
+
+.pill-btn:hover { border-color: var(--gold2); color: var(--gold); }
+.pill-btn.active {
+  background: var(--ink); border-color: var(--ink);
+  color: #fff;
+}
+
+/* Amenities grid */
+.amenity-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.amenity-toggle {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 3px; padding: 8px 12px; cursor: pointer;
+  transition: all 0.15s; user-select: none;
+}
+
+.amenity-toggle:hover { border-color: var(--gold2); }
+.amenity-toggle.on { background: var(--gold-light); border-color: var(--gold2); }
+
+.toggle-box {
+  width: 14px; height: 14px; border: 1.5px solid var(--border2);
+  border-radius: 2px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; transition: all 0.12s;
+}
+
+.amenity-toggle.on .toggle-box {
+  background: var(--gold); border-color: var(--gold); color: #fff;
+}
+
+.toggle-label { font-size: 12px; font-weight: 400; color: var(--ink2); line-height: 1.2; }
+.amenity-toggle.on .toggle-label { color: var(--gold); font-weight: 500; }
+
+/* Score pill */
+.amenity-score-wrap {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 14px; padding: 10px 14px;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 3px;
+}
+
+.score-label {
+  font-family: 'Inconsolata', monospace; font-size: 11px;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+}
+
+.score-value {
+  font-family: 'Cormorant Garamond', serif; font-size: 1.6rem;
+  font-weight: 600; color: var(--gold); line-height: 1;
+}
+
+/* Submit */
+.submit-area {
+  padding: 0 28px 28px;
+  border-top: 1px solid var(--border);
+  padding-top: 24px; margin-top: 4px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+
+.predict-btn {
+  background: var(--ink); color: #fff; border: none;
+  border-radius: 3px; padding: 16px 32px; width: 100%;
+  font-family: 'Outfit', sans-serif; font-weight: 500; font-size: 15px;
+  letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+
+.predict-btn:hover {
+  background: var(--gold);
+  box-shadow: 0 6px 28px rgba(184,135,42,0.3);
+  transform: translateY(-1px);
+}
+
+.predict-btn:active { transform: translateY(0); }
+.predict-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.spinner {
+  display: none; width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+  border-radius: 50%; animation: spin 0.7s linear infinite;
+}
+
+.predict-btn.loading .spinner { display: block; }
+.predict-btn.loading .btn-text { opacity: 0.7; }
+
+.disclaimer {
+  font-size: 11px; color: var(--muted); font-weight: 300;
+  text-align: center; font-style: italic; line-height: 1.5;
+}
+
+.error-box {
+  display: none; background: #fdf2f2; border: 1px solid #f5c6c6;
+  border-radius: 3px; padding: 12px 16px;
+  font-family: 'Inconsolata', monospace; font-size: 12px; color: #c0392b;
+}
+
+/* ── RESULT SIDEBAR ───────────────────────── */
+.result-sidebar {
+  display: flex; flex-direction: column; gap: 20px;
+  animation: riseUp 0.7s ease 0.2s both;
+  position: sticky; top: 24px;
+}
+
+/* Quick guide card */
+.guide-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 4px; overflow: hidden; box-shadow: var(--shadow);
+}
+
+.guide-header {
+  background: var(--gold); padding: 14px 20px;
+}
+
+.guide-header-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.1rem; font-weight: 600; color: #fff;
+}
+
+.guide-body { padding: 18px 20px; }
+
+.guide-row {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+
+.guide-row:last-child { border-bottom: none; padding-bottom: 0; }
+
+.guide-row-label {
+  font-size: 12px; font-weight: 500; color: var(--ink2); line-height: 1.4;
+}
+
+.guide-row-val {
+  font-family: 'Inconsolata', monospace; font-size: 11px;
+  color: var(--muted); text-align: right; white-space: nowrap;
+}
+
+/* Result card */
+#result { display: none; }
+
+.result-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 4px; overflow: hidden; box-shadow: var(--shadow2);
+}
+
+.result-top {
+  background: linear-gradient(135deg, #1c1208 0%, #3d2a10 100%);
+  padding: 28px 24px; text-align: center;
+}
+
+.result-top-label {
+  font-family: 'Inconsolata', monospace; font-size: 10px;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: rgba(255,255,255,0.5); margin-bottom: 10px;
+}
+
+.result-price {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2.8rem; font-weight: 300; color: var(--gold2);
+  line-height: 1; letter-spacing: -0.01em;
+}
+
+.result-price-unit {
+  font-family: 'Outfit', sans-serif; font-size: 14px;
+  color: rgba(255,255,255,0.5); margin-top: 4px;
+}
+
+.result-range {
+  margin-top: 14px; display: flex; align-items: center;
+  justify-content: center; gap: 6px;
+  font-family: 'Inconsolata', monospace; font-size: 12px;
+  color: rgba(255,255,255,0.5);
+}
+
+.result-range span { color: var(--gold2); font-weight: 500; }
+
+.result-metrics-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 1px; background: var(--border);
+}
+
+.result-metric {
+  background: var(--surface); padding: 16px 18px;
+}
+
+.result-metric-label {
+  font-family: 'Inconsolata', monospace; font-size: 9px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 5px;
+}
+
+.result-metric-value {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.3rem; font-weight: 600; color: var(--ink);
+}
+
+.result-note {
+  padding: 14px 18px; background: var(--bg2);
+  font-size: 11px; color: var(--muted); font-style: italic;
+  line-height: 1.5; border-top: 1px solid var(--border);
+}
+
+/* ── ANIMATIONS ───────────────────────────── */
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes riseUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.pop-in { animation: popIn 0.4s cubic-bezier(0.22,1,0.36,1) both; }
+
+/* ── RESPONSIVE ───────────────────────────── */
+@media (max-width: 820px) {
+  .main-wrap { grid-template-columns: 1fr; }
+  .result-sidebar { position: static; }
+  nav { padding: 16px 20px; }
+  .hero { padding: 48px 20px 40px; }
+  .core-grid { grid-template-columns: 1fr; }
+  .amenity-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Estate<span>IQ</span></div>
+  <div class="nav-tag">KOLKATA · ML ESTIMATOR</div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-eyebrow">Gradient Boosting · Kolkata Housing Data</div>
+  <h1>House Price<br/><em>Estimator</em></h1>
+  <p class="hero-sub">Enter property details and amenities to get an instant AI-powered price estimate for Kolkata real estate.</p>
+  <div class="hero-divider"></div>
+</div>
+
+<!-- MAIN -->
+<div class="main-wrap">
+
+  <!-- LEFT: FORM -->
+  <div class="form-panel">
+    <div class="panel-header">
+      <div class="panel-header-title">Property Details</div>
+      <div class="panel-header-mono">All fields required</div>
+    </div>
+
+    <div class="form-body">
+
+      <!-- Core -->
+      <div class="sec-label">Core Information</div>
+      <div class="core-grid">
+
+        <div class="field field-full">
+          <label>Location / Locality</label>
+          <input type="text" id="location" placeholder="e.g. Salt Lake, Ballygunge, Rajarhat…" list="location-list"/>
+          <datalist id="location-list"></datalist>
+          <span class="field-hint">Type the neighbourhood name as in your dataset</span>
+        </div>
+
+        <div class="field">
+          <label>Area <span class="unit">sq ft</span></label>
+          <input type="number" id="area" placeholder="1200" min="100" max="20000"/>
+        </div>
+
+        <div class="field">
+          <label>Bedrooms</label>
+          <div class="bedroom-pills" id="bedroomPills">
+            <button class="pill-btn" data-val="1">1 BHK</button>
+            <button class="pill-btn" data-val="2">2 BHK</button>
+            <button class="pill-btn active" data-val="3">3 BHK</button>
+            <button class="pill-btn" data-val="4">4 BHK</button>
+            <button class="pill-btn" data-val="5">5 BHK</button>
+            <button class="pill-btn" data-val="6">6+</button>
+          </div>
+          <input type="hidden" id="bedrooms" value="3"/>
+        </div>
+
+        <div class="field">
+          <label>Resale Property?</label>
+          <select id="Resale">
+            <option value="0">No — New / Under Construction</option>
+            <option value="1">Yes — Resale</option>
+          </select>
+        </div>
+
+      </div>
+
+      <!-- Amenities -->
+      <div class="sec-label">Amenities & Features</div>
+
+      <div class="amenity-grid" id="amenityGrid"></div>
+
+      <div class="amenity-score-wrap">
+        <span class="score-label">Amenity Score</span>
+        <span class="score-value" id="amenityScore">0</span>
+      </div>
+
+    </div><!-- /form-body -->
+
+    <!-- Submit -->
+    <div class="submit-area">
+      <button class="predict-btn" id="predictBtn" onclick="predict()">
+        <span class="spinner"></span>
+        <span class="btn-text">Estimate Price</span>
+      </button>
+      <div class="error-box" id="errorBox"></div>
+      <p class="disclaimer">Estimates are indicative only. Actual prices may vary based on market conditions.</p>
+    </div>
+
+  </div><!-- /form-panel -->
+
+  <!-- RIGHT: SIDEBAR -->
+  <div class="result-sidebar">
+
+    <!-- Guide -->
+    <div class="guide-card">
+      <div class="guide-header">
+        <div class="guide-header-title">How It Works</div>
+      </div>
+      <div class="guide-body">
+        <div class="guide-row">
+          <span class="guide-row-label">Model</span>
+          <span class="guide-row-val">Gradient Boosting<br/>Regressor</span>
+        </div>
+        <div class="guide-row">
+          <span class="guide-row-label">Location Encoding</span>
+          <span class="guide-row-val">Target Median<br/>Encoding</span>
+        </div>
+        <div class="guide-row">
+          <span class="guide-row-label">Confidence Band</span>
+          <span class="guide-row-val">± 12%</span>
+        </div>
+        <div class="guide-row">
+          <span class="guide-row-label">Features</span>
+          <span class="guide-row-val">41 total<br/>(36 amenity flags)</span>
+        </div>
+        <div class="guide-row">
+          <span class="guide-row-label">Validation</span>
+          <span class="guide-row-val">5-Fold CV<br/>R² score</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result (hidden until prediction) -->
+    <div id="result">
+      <div class="result-card pop-in">
+        <div class="result-top">
+          <div class="result-top-label">Estimated Market Value</div>
+          <div class="result-price" id="resPrice">—</div>
+          <div class="result-price-unit">Indian Rupees (Lakhs)</div>
+          <div class="result-range">
+            Range: <span id="resLow">—</span> – <span id="resHigh">—</span> L
+          </div>
+        </div>
+        <div class="result-metrics-grid">
+          <div class="result-metric">
+            <div class="result-metric-label">Price / sq ft</div>
+            <div class="result-metric-value" id="resPSF">—</div>
+          </div>
+          <div class="result-metric">
+            <div class="result-metric-label">Amenity Score</div>
+            <div class="result-metric-value" id="resAmenity">—</div>
+          </div>
+          <div class="result-metric">
+            <div class="result-metric-label">Location</div>
+            <div class="result-metric-value" id="resLoc" style="font-size:1rem">—</div>
+          </div>
+          <div class="result-metric">
+            <div class="result-metric-label">Bedrooms</div>
+            <div class="result-metric-value" id="resBed">—</div>
+          </div>
+        </div>
+        <div class="result-note" id="resNote"></div>
+      </div>
+    </div>
+
+  </div><!-- /result-sidebar -->
+
+</div><!-- /main-wrap -->
+
+<script>
+const API = "http://localhost:8000";
+
+// ── AMENITY DEFINITIONS ──────────────────────────────────────────
+const amenities = [
+  { key: "MaintenanceStaff",    label: "Maintenance Staff" },
+  { key: "Gymnasium",           label: "Gymnasium" },
+  { key: "SwimmingPool",        label: "Swimming Pool" },
+  { key: "LandscapedGardens",   label: "Landscaped Gardens" },
+  { key: "JoggingTrack",        label: "Jogging Track" },
+  { key: "RainWaterHarvesting", label: "Rain Water Harvesting" },
+  { key: "IndoorGames",         label: "Indoor Games" },
+  { key: "ShoppingMall",        label: "Shopping Mall" },
+  { key: "Intercom",            label: "Intercom" },
+  { key: "SportsFacility",      label: "Sports Facility" },
+  { key: "ATM",                 label: "ATM" },
+  { key: "ClubHouse",           label: "Club House" },
+  { key: "School",              label: "School Nearby" },
+  { key: "24X7Security",        label: "24×7 Security" },
+  { key: "PowerBackup",         label: "Power Backup" },
+  { key: "CarParking",          label: "Car Parking" },
+  { key: "StaffQuarter",        label: "Staff Quarter" },
+  { key: "Cafeteria",           label: "Cafeteria" },
+  { key: "MultipurposeRoom",    label: "Multipurpose Room" },
+  { key: "Hospital",            label: "Hospital Nearby" },
+  { key: "WashingMachine",      label: "Washing Machine" },
+  { key: "Gasconnection",       label: "Gas Connection" },
+  { key: "AC",                  label: "Air Conditioning" },
+  { key: "Wifi",                label: "Wi-Fi" },
+  { key: "Children'splayarea",  label: "Children's Play Area" },
+  { key: "LiftAvailable",       label: "Lift" },
+  { key: "BED",                 label: "Bed Provided" },
+  { key: "VaastuCompliant",     label: "Vaastu Compliant" },
+  { key: "Microwave",           label: "Microwave" },
+  { key: "GolfCourse",          label: "Golf Course" },
+  { key: "TV",                  label: "Television" },
+  { key: "DiningTable",         label: "Dining Table" },
+  { key: "Sofa",                label: "Sofa" },
+  { key: "Wardrobe",            label: "Wardrobe" },
+  { key: "Refrigerator",        label: "Refrigerator" },
+];
+
+const amenityState = {};
+
+// ── BUILD AMENITY GRID ───────────────────────────────────────────
+function buildAmenities() {
+  const grid = document.getElementById("amenityGrid");
+  amenities.forEach(a => {
+    amenityState[a.key] = 0;
+    const div = document.createElement("div");
+    div.className = "amenity-toggle";
+    div.dataset.key = a.key;
+    div.innerHTML = `<div class="toggle-box"></div><span class="toggle-label">${a.label}</span>`;
+    div.addEventListener("click", () => {
+      amenityState[a.key] = amenityState[a.key] ? 0 : 1;
+      div.classList.toggle("on", !!amenityState[a.key]);
+      div.querySelector(".toggle-box").textContent = amenityState[a.key] ? "✓" : "";
+      updateScore();
+    });
+    grid.appendChild(div);
+  });
+}
+
+function updateScore() {
+  const score = Object.values(amenityState).reduce((a, b) => a + b, 0);
+  document.getElementById("amenityScore").textContent = score;
+}
+
+// ── BEDROOM PILLS ────────────────────────────────────────────────
+document.getElementById("bedroomPills").addEventListener("click", e => {
+  const btn = e.target.closest(".pill-btn");
+  if (!btn) return;
+  document.querySelectorAll(".pill-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  document.getElementById("bedrooms").value = btn.dataset.val;
+});
+
+// ── LOAD LOCATIONS ───────────────────────────────────────────────
+async function loadLocations() {
+  try {
+    const resp = await fetch(`${API}/locations`);
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const dl = document.getElementById("location-list");
+    data.locations.forEach(loc => {
+      const opt = document.createElement("option");
+      opt.value = loc;
+      dl.appendChild(opt);
+    });
+  } catch (_) {}
+}
+
+// ── HELPERS ──────────────────────────────────────────────────────
+function showError(msg) {
+  const b = document.getElementById("errorBox");
+  b.style.display = "block"; b.textContent = "⚠ " + msg;
+}
+function hideError() { document.getElementById("errorBox").style.display = "none"; }
+
+function setLoading(on) {
+  const btn = document.getElementById("predictBtn");
+  btn.disabled = on; btn.classList.toggle("loading", on);
+  btn.querySelector(".btn-text").textContent = on ? "Calculating…" : "Estimate Price";
+}
+
+function fmt(n) { return new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(n); }
+
+// ── PREDICT ──────────────────────────────────────────────────────
+async function predict() {
+  hideError();
+
+  const location = document.getElementById("location").value.trim();
+  const area     = parseFloat(document.getElementById("area").value);
+  const bedrooms = parseInt(document.getElementById("bedrooms").value);
+  const resale   = parseInt(document.getElementById("Resale").value);
+
+  if (!location) { showError("Please enter a location."); return; }
+  if (!area || area <= 0) { showError("Please enter a valid area."); return; }
+
+  const payload = {
+    area, location, bedrooms,
+    Resale: resale,
+    ...amenityState
+  };
+
+  // Fix alias keys for FastAPI
+  if ("Children'splayarea" in payload) {
+    payload["Children'splayarea"] = amenityState["Children'splayarea"];
+  }
+  if ("24X7Security" in payload) {
+    payload["24X7Security"] = amenityState["24X7Security"];
+  }
+
+  setLoading(true);
+  try {
+    const resp = await fetch(`${API}/predict`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err.detail || `Server error (${resp.status})`);
+    }
+
+    const d = await resp.json();
+    showResult(d, bedrooms);
+
+  } catch (e) {
+    if (e.message.includes("Failed to fetch")) {
+      showError("Cannot reach API. Start FastAPI on localhost:8000.");
+    } else {
+      showError(e.message);
+    }
+  } finally {
+    setLoading(false);
+  }
+}
+
+function showResult(d, bedrooms) {
+  document.getElementById("resPrice").textContent   = fmt(d.predicted_price_lakhs) + " L";
+  document.getElementById("resLow").textContent     = fmt(d.price_range_low);
+  document.getElementById("resHigh").textContent    = fmt(d.price_range_high);
+  document.getElementById("resPSF").textContent     = "₹" + fmt(d.price_per_sqft);
+  document.getElementById("resAmenity").textContent = d.amenity_score + " / " + amenities.length;
+  document.getElementById("resLoc").textContent     = d.location_used;
+  document.getElementById("resBed").textContent     = bedrooms + " BHK";
+  document.getElementById("resNote").textContent    = d.note;
+
+  const res = document.getElementById("result");
+  res.style.display = "block";
+  res.querySelector(".result-card").classList.remove("pop-in");
+  void res.querySelector(".result-card").offsetWidth;
+  res.querySelector(".result-card").classList.add("pop-in");
+  res.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+// ── INIT ─────────────────────────────────────────────────────────
+buildAmenities();
+loadLocations();
+</script>
+</body>
+</html>
