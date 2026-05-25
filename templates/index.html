@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EstateIQ Kolkata — House Price Estimator</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&family=Inconsolata:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #f5f0e8;
+  --bg2: #ede7d9;
+  --surface: #fff9f2;
+  --surface2: #f9f4eb;
+  --border: #d9cfc0;
+  --border2: #c5b99e;
+  --ink: #1c1208;
+  --ink2: #4a3d28;
+  --muted: #8a7560;
+  --gold: #b8872a;
+  --gold2: #d4a043;
+  --gold-light: rgba(184,135,42,0.12);
+  --disabled: #e8e0d4;
+  --disabled-text: #c5b99e;
+  --shadow: 0 2px 24px rgba(28,18,8,0.08);
+  --shadow2: 0 8px 48px rgba(28,18,8,0.14);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%23f5f0e8'/%3E%3Crect x='0' y='0' width='1' height='1' fill='%23e8e0d0' opacity='0.4'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%23e8e0d0' opacity='0.3'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0;
+}
+
+/* NAV */
+nav {
+  position: relative; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 48px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(245,240,232,0.95);
+  backdrop-filter: blur(8px);
+}
+.nav-logo { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; font-weight: 600; letter-spacing: 0.04em; color: var(--ink); }
+.nav-logo span { color: var(--gold); }
+.nav-tag { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; padding: 4px 10px; }
+
+/* HERO */
+.hero { position: relative; z-index: 1; text-align: center; padding: 56px 24px 40px; animation: fadeDown 0.8s ease both; }
+.hero-eyebrow { font-family: 'Inconsolata', monospace; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); margin-bottom: 14px; display: flex; align-items: center; justify-content: center; gap: 12px; }
+.hero-eyebrow::before, .hero-eyebrow::after { content: ''; flex: 0 0 40px; height: 1px; background: var(--gold); }
+.hero h1 { font-family: 'Cormorant Garamond', serif; font-size: clamp(2.6rem, 7vw, 4.8rem); font-weight: 300; line-height: 1.0; color: var(--ink); }
+.hero h1 em { font-style: italic; color: var(--gold); }
+.hero-sub { margin-top: 14px; font-size: 14px; font-weight: 300; color: var(--muted); max-width: 480px; margin-left: auto; margin-right: auto; line-height: 1.7; }
+.hero-divider { width: 60px; height: 2px; background: linear-gradient(90deg, transparent, var(--gold), transparent); margin: 28px auto 0; }
+
+/* MAIN LAYOUT */
+.main-wrap {
+  position: relative; z-index: 1;
+  max-width: 1100px; margin: 0 auto;
+  padding: 0 24px 80px;
+  display: grid; grid-template-columns: 1fr 320px; gap: 28px;
+  align-items: start;
+}
+
+/* WIZARD PANEL */
+.wizard-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  animation: riseUp 0.7s ease 0.1s both;
+}
+
+.panel-header {
+  background: var(--ink);
+  padding: 18px 28px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.panel-header-title { font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; font-weight: 400; color: #fff; letter-spacing: 0.04em; }
+.panel-header-mono { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.4); }
+
+/* PROGRESS BAR */
+.progress-wrap {
+  padding: 20px 28px 0;
+  display: flex; align-items: center; gap: 0;
+}
+
+.step-dot-wrap {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  flex: 1; position: relative;
+}
+
+.step-dot-wrap:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 14px; left: 50%; right: -50%;
+  height: 2px;
+  background: var(--border);
+  z-index: 0;
+  transition: background 0.4s;
+}
+
+.step-dot-wrap.completed:not(:last-child)::after { background: var(--gold); }
+
+.step-dot {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--surface2);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Inconsolata', monospace; font-size: 11px; font-weight: 500;
+  color: var(--muted);
+  position: relative; z-index: 1;
+  transition: all 0.3s;
+}
+
+.step-dot-wrap.active .step-dot {
+  border-color: var(--gold); background: var(--gold); color: #fff;
+  box-shadow: 0 0 0 4px var(--gold-light);
+}
+
+.step-dot-wrap.completed .step-dot {
+  border-color: var(--gold); background: var(--gold); color: #fff;
+}
+
+.step-dot-label {
+  font-family: 'Inconsolata', monospace; font-size: 9px;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--muted); text-align: center; white-space: nowrap;
+  transition: color 0.3s;
+}
+
+.step-dot-wrap.active .step-dot-label,
+.step-dot-wrap.completed .step-dot-label { color: var(--gold); }
+
+/* STEPS */
+.steps-container { padding: 28px; }
+
+.step {
+  display: none;
+  animation: stepIn 0.4s cubic-bezier(0.22,1,0.36,1) both;
+}
+.step.active { display: block; }
+
+@keyframes stepIn {
+  from { opacity: 0; transform: translateX(18px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.step-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.5rem; font-weight: 400; color: var(--ink);
+  margin-bottom: 4px;
+}
+.step-title em { font-style: italic; color: var(--gold); }
+.step-desc { font-size: 12px; color: var(--muted); font-weight: 300; margin-bottom: 24px; line-height: 1.6; }
+
+/* Fields */
+.field { display: flex; flex-direction: column; gap: 7px; margin-bottom: 4px; }
+label { font-size: 11px; font-weight: 500; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; display: flex; align-items: center; gap: 6px; }
+.unit { font-family: 'Inconsolata', monospace; font-size: 9px; background: var(--bg2); border: 1px solid var(--border); color: var(--border2); padding: 1px 5px; border-radius: 3px; text-transform: none; letter-spacing: 0; }
+
+input[type="number"], input[type="text"], select {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 3px;
+  padding: 13px 16px; font-family: 'Inconsolata', monospace; font-size: 15px; color: var(--ink);
+  transition: border-color 0.2s, box-shadow 0.2s; width: 100%; -moz-appearance: textfield;
+}
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+input:focus, select:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-light); background: #fff; }
+input::placeholder { color: var(--border2); }
+select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238a7560' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 32px; cursor: pointer; appearance: none; }
+.field-hint { font-size: 11px; color: var(--muted); font-weight: 300; }
+
+/* Bedroom pills */
+.bedroom-pills { display: flex; gap: 10px; flex-wrap: wrap; }
+.pill-btn {
+  background: var(--surface2); border: 1.5px solid var(--border); border-radius: 3px;
+  padding: 12px 20px; font-family: 'Inconsolata', monospace; font-size: 15px; font-weight: 500;
+  color: var(--ink2); cursor: pointer; transition: all 0.15s; flex: 1; text-align: center;
+}
+.pill-btn:hover { border-color: var(--gold2); color: var(--gold); }
+.pill-btn.active { background: var(--ink); border-color: var(--ink); color: #fff; }
+
+/* Resale options */
+.resale-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.resale-card {
+  border: 1.5px solid var(--border); border-radius: 4px; padding: 16px;
+  cursor: pointer; transition: all 0.15s; background: var(--surface2); text-align: center;
+}
+.resale-card:hover { border-color: var(--gold2); }
+.resale-card.active { border-color: var(--gold); background: var(--gold-light); }
+.resale-card-icon { font-size: 28px; margin-bottom: 8px; }
+.resale-card-title { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-weight: 600; color: var(--ink); }
+.resale-card-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.resale-card.active .resale-card-title { color: var(--gold); }
+
+/* Amenities */
+.amenity-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 8px; }
+.amenity-toggle {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 3px;
+  padding: 8px 10px; cursor: pointer; transition: all 0.15s; user-select: none;
+}
+.amenity-toggle:hover { border-color: var(--gold2); }
+.amenity-toggle.on { background: var(--gold-light); border-color: var(--gold2); }
+.toggle-box {
+  width: 14px; height: 14px; border: 1.5px solid var(--border2); border-radius: 2px;
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; transition: all 0.12s;
+}
+.amenity-toggle.on .toggle-box { background: var(--gold); border-color: var(--gold); color: #fff; }
+.toggle-label { font-size: 11px; font-weight: 400; color: var(--ink2); line-height: 1.2; }
+.amenity-toggle.on .toggle-label { color: var(--gold); font-weight: 500; }
+
+.amenity-score-wrap {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 14px; padding: 10px 14px;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 3px;
+}
+.score-label { font-family: 'Inconsolata', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.score-value { font-family: 'Cormorant Garamond', serif; font-size: 1.6rem; font-weight: 600; color: var(--gold); line-height: 1; }
+
+/* NAV BUTTONS */
+.step-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 28px; gap: 12px;
+}
+
+.btn-back {
+  background: transparent; border: 1.5px solid var(--border); border-radius: 3px;
+  padding: 13px 24px; font-family: 'Outfit', sans-serif; font-weight: 400; font-size: 13px;
+  color: var(--muted); cursor: pointer; transition: all 0.15s; letter-spacing: 0.04em;
+}
+.btn-back:hover { border-color: var(--border2); color: var(--ink); }
+.btn-back:disabled { opacity: 0; pointer-events: none; }
+
+.btn-next {
+  background: var(--ink); border: none; border-radius: 3px;
+  padding: 13px 32px; font-family: 'Outfit', sans-serif; font-weight: 500; font-size: 14px;
+  color: #fff; cursor: pointer; transition: all 0.2s; letter-spacing: 0.06em;
+  text-transform: uppercase; display: flex; align-items: center; gap: 8px; flex: 1; justify-content: center;
+}
+.btn-next:hover { background: var(--gold); box-shadow: 0 6px 24px rgba(184,135,42,0.3); transform: translateY(-1px); }
+.btn-next:active { transform: translateY(0); }
+.btn-next:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; background: var(--ink); }
+
+.btn-submit {
+  background: var(--gold); border: none; border-radius: 3px;
+  padding: 15px 32px; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 15px;
+  color: #fff; cursor: pointer; transition: all 0.2s; letter-spacing: 0.06em;
+  text-transform: uppercase; display: flex; align-items: center; gap: 8px; flex: 1; justify-content: center;
+  box-shadow: 0 4px 20px rgba(184,135,42,0.25);
+}
+.btn-submit:hover { background: var(--gold2); transform: translateY(-1px); box-shadow: 0 8px 32px rgba(184,135,42,0.35); }
+.btn-submit:active { transform: translateY(0); }
+.btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* SPINNER */
+.spinner { display: none; width: 15px; height: 15px; border: 2px solid rgba(255,255,255,0.35); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
+.btn-submit.loading .spinner { display: block; }
+.btn-submit.loading .btn-text { opacity: 0.7; }
+
+/* ERROR */
+.error-box { display: none; margin-top: 14px; background: #fdf2f2; border: 1px solid #f5c6c6; border-radius: 3px; padding: 12px 16px; font-family: 'Inconsolata', monospace; font-size: 12px; color: #c0392b; }
+
+/* SUMMARY (step 5) */
+.summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.summary-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 12px 14px; }
+.summary-chip-label { font-family: 'Inconsolata', monospace; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.summary-chip-value { font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; font-weight: 600; color: var(--ink); }
+
+/* SIDEBAR */
+.result-sidebar { display: flex; flex-direction: column; gap: 20px; animation: riseUp 0.7s ease 0.2s both; position: sticky; top: 24px; }
+
+.guide-card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; box-shadow: var(--shadow); }
+.guide-header { background: var(--gold); padding: 14px 20px; }
+.guide-header-title { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-weight: 600; color: #fff; }
+.guide-body { padding: 18px 20px; }
+.guide-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--border); gap: 12px; }
+.guide-row:last-child { border-bottom: none; padding-bottom: 0; }
+.guide-row-label { font-size: 12px; font-weight: 500; color: var(--ink2); line-height: 1.4; }
+.guide-row-val { font-family: 'Inconsolata', monospace; font-size: 11px; color: var(--muted); text-align: right; white-space: nowrap; }
+
+/* Steps tracker sidebar */
+.steps-tracker { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; box-shadow: var(--shadow); }
+.steps-tracker-header { background: var(--ink2); padding: 12px 18px; }
+.steps-tracker-title { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.6); }
+.tracker-list { padding: 8px 0; }
+.tracker-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px 18px; border-bottom: 1px solid var(--border);
+  transition: background 0.2s;
+}
+.tracker-item:last-child { border-bottom: none; }
+.tracker-item.active { background: var(--gold-light); }
+.tracker-item.done { opacity: 0.7; }
+.tracker-num {
+  width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Inconsolata', monospace; font-size: 10px;
+  background: var(--bg2); border: 1px solid var(--border); color: var(--muted);
+  transition: all 0.3s;
+}
+.tracker-item.active .tracker-num { background: var(--gold); border-color: var(--gold); color: #fff; }
+.tracker-item.done .tracker-num { background: var(--gold); border-color: var(--gold); color: #fff; }
+.tracker-info { flex: 1; }
+.tracker-label { font-size: 12px; font-weight: 500; color: var(--ink2); }
+.tracker-item.active .tracker-label { color: var(--gold); font-weight: 600; }
+.tracker-status { font-family: 'Inconsolata', monospace; font-size: 10px; color: var(--muted); margin-top: 1px; }
+.tracker-item.done .tracker-status { color: var(--gold); }
+.tracker-check { font-size: 12px; color: var(--gold); opacity: 0; transition: opacity 0.3s; }
+.tracker-item.done .tracker-check { opacity: 1; }
+
+/* RESULT */
+#result { display: none; }
+.result-card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; box-shadow: var(--shadow2); }
+.result-top { background: linear-gradient(135deg, #1c1208 0%, #3d2a10 100%); padding: 28px 24px; text-align: center; }
+.result-top-label { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 10px; }
+.result-price { font-family: 'Cormorant Garamond', serif; font-size: 2.8rem; font-weight: 300; color: var(--gold2); line-height: 1; }
+.result-price-unit { font-size: 13px; color: rgba(255,255,255,0.45); margin-top: 4px; }
+.result-range { margin-top: 12px; font-family: 'Inconsolata', monospace; font-size: 12px; color: rgba(255,255,255,0.45); }
+.result-range span { color: var(--gold2); font-weight: 500; }
+.result-metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); }
+.result-metric { background: var(--surface); padding: 14px 16px; }
+.result-metric-label { font-family: 'Inconsolata', monospace; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.result-metric-value { font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; font-weight: 600; color: var(--ink); }
+.result-note { padding: 12px 16px; background: var(--bg2); font-size: 11px; color: var(--muted); font-style: italic; line-height: 1.5; border-top: 1px solid var(--border); }
+
+.btn-restart { width: 100%; margin-top: 0; background: transparent; border: 1px solid var(--border); border-radius: 0; padding: 12px; font-family: 'Inconsolata', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); cursor: pointer; transition: all 0.2s; }
+.btn-restart:hover { background: var(--bg2); color: var(--ink); }
+
+/* ANIMATIONS */
+@keyframes fadeDown { from { opacity: 0; transform: translateY(-18px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes riseUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+.pop-in { animation: popIn 0.4s cubic-bezier(0.22,1,0.36,1) both; }
+
+@media (max-width: 820px) {
+  .main-wrap { grid-template-columns: 1fr; }
+  .result-sidebar { position: static; }
+  nav { padding: 16px 20px; }
+  .hero { padding: 40px 20px 32px; }
+  .resale-options { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Estate<span>IQ</span></div>
+  <div class="nav-tag">KOLKATA · ML ESTIMATOR</div>
+</nav>
+
+<div class="hero">
+  <div class="hero-eyebrow">Gradient Boosting · Kolkata Housing Data</div>
+  <h1>House Price<br/><em>Estimator</em></h1>
+  <p class="hero-sub">Answer 5 simple steps to get an instant AI-powered price estimate for Kolkata real estate.</p>
+  <div class="hero-divider"></div>
+</div>
+
+<div class="main-wrap">
+
+  <!-- WIZARD -->
+  <div class="wizard-panel">
+    <div class="panel-header">
+      <div class="panel-header-title">Property Details</div>
+      <div class="panel-header-mono" id="stepCounter">Step 1 of 5</div>
+    </div>
+
+    <!-- Progress dots -->
+    <div class="progress-wrap" id="progressWrap">
+      <div class="step-dot-wrap active" data-step="1">
+        <div class="step-dot">1</div>
+        <div class="step-dot-label">Location</div>
+      </div>
+      <div class="step-dot-wrap" data-step="2">
+        <div class="step-dot">2</div>
+        <div class="step-dot-label">Area</div>
+      </div>
+      <div class="step-dot-wrap" data-step="3">
+        <div class="step-dot">3</div>
+        <div class="step-dot-label">Bedrooms</div>
+      </div>
+      <div class="step-dot-wrap" data-step="4">
+        <div class="step-dot">4</div>
+        <div class="step-dot-label">Type</div>
+      </div>
+      <div class="step-dot-wrap" data-step="5">
+        <div class="step-dot">5</div>
+        <div class="step-dot-label">Amenities</div>
+      </div>
+    </div>
+
+    <div class="steps-container">
+
+      <!-- STEP 1: LOCATION -->
+      <div class="step active" id="step-1">
+        <div class="step-title">Where is the <em>property?</em></div>
+        <div class="step-desc">Type the locality or neighbourhood name in Kolkata.</div>
+        <div class="field">
+          <label>Location / Locality</label>
+          <input type="text" id="location" placeholder="e.g. Salt Lake, Ballygunge, Rajarhat…" list="location-list" autocomplete="off"/>
+          <datalist id="location-list"></datalist>
+          <span class="field-hint">Start typing to see suggestions from the dataset</span>
+        </div>
+        <div class="step-nav">
+          <button class="btn-back" disabled>← Back</button>
+          <button class="btn-next" id="next1" onclick="goTo(2)">Next →</button>
+        </div>
+      </div>
+
+      <!-- STEP 2: AREA -->
+      <div class="step" id="step-2">
+        <div class="step-title">What is the <em>area?</em></div>
+        <div class="step-desc">Enter the total carpet / built-up area of the property in square feet.</div>
+        <div class="field">
+          <label>Area <span class="unit">sq ft</span></label>
+          <input type="number" id="area" placeholder="e.g. 1200" min="100" max="20000"/>
+          <span class="field-hint">Typical Kolkata flats range from 600 – 3000 sq ft</span>
+        </div>
+        <div class="step-nav">
+          <button class="btn-back" onclick="goTo(1)">← Back</button>
+          <button class="btn-next" onclick="goTo(3)">Next →</button>
+        </div>
+      </div>
+
+      <!-- STEP 3: BEDROOMS -->
+      <div class="step" id="step-3">
+        <div class="step-title">How many <em>bedrooms?</em></div>
+        <div class="step-desc">Select the number of bedrooms (BHK) in the property.</div>
+        <div class="bedroom-pills" id="bedroomPills">
+          <button class="pill-btn" data-val="1">1 BHK</button>
+          <button class="pill-btn" data-val="2">2 BHK</button>
+          <button class="pill-btn" data-val="3">3 BHK</button>
+          <button class="pill-btn" data-val="4">4 BHK</button>
+          <button class="pill-btn" data-val="5">5 BHK</button>
+          <button class="pill-btn" data-val="6">6+</button>
+        </div>
+        <input type="hidden" id="bedrooms" value=""/>
+        <div class="step-nav" style="margin-top:28px">
+          <button class="btn-back" onclick="goTo(2)">← Back</button>
+          <button class="btn-next" id="next3" onclick="goTo(4)" disabled>Next →</button>
+        </div>
+      </div>
+
+      <!-- STEP 4: RESALE -->
+      <div class="step" id="step-4">
+        <div class="step-title">New or <em>resale?</em></div>
+        <div class="step-desc">Is this a brand new / under-construction property or a resale?</div>
+        <div class="resale-options">
+          <div class="resale-card" id="card-new" onclick="selectResale(0)">
+            <div class="resale-card-icon">🏗️</div>
+            <div class="resale-card-title">New</div>
+            <div class="resale-card-sub">Under construction or first sale</div>
+          </div>
+          <div class="resale-card" id="card-resale" onclick="selectResale(1)">
+            <div class="resale-card-icon">🏠</div>
+            <div class="resale-card-title">Resale</div>
+            <div class="resale-card-sub">Previously owned property</div>
+          </div>
+        </div>
+        <input type="hidden" id="Resale" value=""/>
+        <div class="step-nav" style="margin-top:28px">
+          <button class="btn-back" onclick="goTo(3)">← Back</button>
+          <button class="btn-next" id="next4" onclick="goTo(5)" disabled>Next →</button>
+        </div>
+      </div>
+
+      <!-- STEP 5: AMENITIES -->
+      <div class="step" id="step-5">
+        <div class="step-title">Select <em>amenities</em></div>
+        <div class="step-desc">Toggle all amenities available in the property. More amenities generally means a higher price.</div>
+        <div class="amenity-grid" id="amenityGrid"></div>
+        <div class="amenity-score-wrap">
+          <span class="score-label">Amenity Score</span>
+          <span class="score-value" id="amenityScore">0</span>
+        </div>
+        <div class="error-box" id="errorBox"></div>
+        <div class="step-nav" style="margin-top:20px">
+          <button class="btn-back" onclick="goTo(4)">← Back</button>
+          <button class="btn-submit" id="submitBtn" onclick="predict()">
+            <span class="spinner"></span>
+            <span class="btn-text">Estimate Price ✦</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="result-sidebar">
+
+    <!-- Step tracker -->
+    <div class="steps-tracker">
+      <div class="steps-tracker-header">
+        <div class="steps-tracker-title">Your Progress</div>
+      </div>
+      <div class="tracker-list" id="trackerList">
+        <div class="tracker-item active" id="track-1">
+          <div class="tracker-num">1</div>
+          <div class="tracker-info">
+            <div class="tracker-label">Location</div>
+            <div class="tracker-status" id="tval-1">Not filled yet</div>
+          </div>
+          <div class="tracker-check">✓</div>
+        </div>
+        <div class="tracker-item" id="track-2">
+          <div class="tracker-num">2</div>
+          <div class="tracker-info">
+            <div class="tracker-label">Area</div>
+            <div class="tracker-status" id="tval-2">Waiting…</div>
+          </div>
+          <div class="tracker-check">✓</div>
+        </div>
+        <div class="tracker-item" id="track-3">
+          <div class="tracker-num">3</div>
+          <div class="tracker-info">
+            <div class="tracker-label">Bedrooms</div>
+            <div class="tracker-status" id="tval-3">Waiting…</div>
+          </div>
+          <div class="tracker-check">✓</div>
+        </div>
+        <div class="tracker-item" id="track-4">
+          <div class="tracker-num">4</div>
+          <div class="tracker-info">
+            <div class="tracker-label">Property Type</div>
+            <div class="tracker-status" id="tval-4">Waiting…</div>
+          </div>
+          <div class="tracker-check">✓</div>
+        </div>
+        <div class="tracker-item" id="track-5">
+          <div class="tracker-num">5</div>
+          <div class="tracker-info">
+            <div class="tracker-label">Amenities</div>
+            <div class="tracker-status" id="tval-5">Waiting…</div>
+          </div>
+          <div class="tracker-check">✓</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Guide -->
+    <div class="guide-card">
+      <div class="guide-header"><div class="guide-header-title">How It Works</div></div>
+      <div class="guide-body">
+        <div class="guide-row"><span class="guide-row-label">Model</span><span class="guide-row-val">Gradient Boosting<br/>Regressor</span></div>
+        <div class="guide-row"><span class="guide-row-label">Location Encoding</span><span class="guide-row-val">Target Median<br/>Encoding</span></div>
+        <div class="guide-row"><span class="guide-row-label">Confidence Band</span><span class="guide-row-val">± 12%</span></div>
+        <div class="guide-row"><span class="guide-row-label">Features</span><span class="guide-row-val">41 total</span></div>
+        <div class="guide-row"><span class="guide-row-label">Validation</span><span class="guide-row-val">5-Fold CV R²</span></div>
+      </div>
+    </div>
+
+    <!-- Result -->
+    <div id="result">
+      <div class="result-card pop-in">
+        <div class="result-top">
+          <div class="result-top-label">Estimated Market Value</div>
+          <div class="result-price" id="resPrice">—</div>
+          <div class="result-price-unit">Indian Rupees (Lakhs)</div>
+          <div class="result-range">Range: <span id="resLow">—</span> – <span id="resHigh">—</span> L</div>
+        </div>
+        <div class="result-metrics-grid">
+          <div class="result-metric"><div class="result-metric-label">Price / sq ft</div><div class="result-metric-value" id="resPSF">—</div></div>
+          <div class="result-metric"><div class="result-metric-label">Amenity Score</div><div class="result-metric-value" id="resAmenity">—</div></div>
+          <div class="result-metric"><div class="result-metric-label">Location</div><div class="result-metric-value" id="resLoc" style="font-size:0.95rem">—</div></div>
+          <div class="result-metric"><div class="result-metric-label">Bedrooms</div><div class="result-metric-value" id="resBed">—</div></div>
+        </div>
+        <div class="result-note" id="resNote"></div>
+        <button class="btn-restart" onclick="restart()">↺ Start New Estimate</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const API = "http://localhost:8000";
+let currentStep = 1;
+let resaleVal = "";
+
+const amenities = [
+  { key: "MaintenanceStaff",    label: "Maintenance Staff" },
+  { key: "Gymnasium",           label: "Gymnasium" },
+  { key: "SwimmingPool",        label: "Swimming Pool" },
+  { key: "LandscapedGardens",   label: "Landscaped Gardens" },
+  { key: "JoggingTrack",        label: "Jogging Track" },
+  { key: "RainWaterHarvesting", label: "Rain Water Harvesting" },
+  { key: "IndoorGames",         label: "Indoor Games" },
+  { key: "ShoppingMall",        label: "Shopping Mall" },
+  { key: "Intercom",            label: "Intercom" },
+  { key: "SportsFacility",      label: "Sports Facility" },
+  { key: "ATM",                 label: "ATM" },
+  { key: "ClubHouse",           label: "Club House" },
+  { key: "School",              label: "School Nearby" },
+  { key: "24X7Security",        label: "24×7 Security" },
+  { key: "PowerBackup",         label: "Power Backup" },
+  { key: "CarParking",          label: "Car Parking" },
+  { key: "StaffQuarter",        label: "Staff Quarter" },
+  { key: "Cafeteria",           label: "Cafeteria" },
+  { key: "MultipurposeRoom",    label: "Multipurpose Room" },
+  { key: "Hospital",            label: "Hospital Nearby" },
+  { key: "WashingMachine",      label: "Washing Machine" },
+  { key: "Gasconnection",       label: "Gas Connection" },
+  { key: "AC",                  label: "Air Conditioning" },
+  { key: "Wifi",                label: "Wi-Fi" },
+  { key: "Children'splayarea",  label: "Children's Play Area" },
+  { key: "LiftAvailable",       label: "Lift" },
+  { key: "BED",                 label: "Bed Provided" },
+  { key: "VaastuCompliant",     label: "Vaastu Compliant" },
+  { key: "Microwave",           label: "Microwave" },
+  { key: "GolfCourse",          label: "Golf Course" },
+  { key: "TV",                  label: "Television" },
+  { key: "DiningTable",         label: "Dining Table" },
+  { key: "Sofa",                label: "Sofa" },
+  { key: "Wardrobe",            label: "Wardrobe" },
+  { key: "Refrigerator",        label: "Refrigerator" },
+];
+const amenityState = {};
+
+// ── BUILD AMENITIES ──────────────────────────────────────────────
+function buildAmenities() {
+  const grid = document.getElementById("amenityGrid");
+  amenities.forEach(a => {
+    amenityState[a.key] = 0;
+    const div = document.createElement("div");
+    div.className = "amenity-toggle";
+    div.dataset.key = a.key;
+    div.innerHTML = `<div class="toggle-box"></div><span class="toggle-label">${a.label}</span>`;
+    div.addEventListener("click", () => {
+      amenityState[a.key] = amenityState[a.key] ? 0 : 1;
+      div.classList.toggle("on", !!amenityState[a.key]);
+      div.querySelector(".toggle-box").textContent = amenityState[a.key] ? "✓" : "";
+      updateScore();
+    });
+    grid.appendChild(div);
+  });
+}
+
+function updateScore() {
+  const score = Object.values(amenityState).reduce((a, b) => a + b, 0);
+  document.getElementById("amenityScore").textContent = score;
+  document.getElementById("tval-5").textContent = score + " selected";
+}
+
+// ── LOAD LOCATIONS ───────────────────────────────────────────────
+async function loadLocations() {
+  try {
+    const resp = await fetch(`${API}/locations`);
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const dl = document.getElementById("location-list");
+    data.locations.forEach(loc => {
+      const opt = document.createElement("option"); opt.value = loc; dl.appendChild(opt);
+    });
+  } catch (_) {}
+}
+
+// ── BEDROOM PILLS ────────────────────────────────────────────────
+document.getElementById("bedroomPills").addEventListener("click", e => {
+  const btn = e.target.closest(".pill-btn");
+  if (!btn) return;
+  document.querySelectorAll(".pill-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  document.getElementById("bedrooms").value = btn.dataset.val;
+  document.getElementById("next3").disabled = false;
+  document.getElementById("tval-3").textContent = btn.dataset.val + " BHK";
+});
+
+// ── RESALE SELECTION ─────────────────────────────────────────────
+function selectResale(val) {
+  resaleVal = val;
+  document.getElementById("Resale").value = val;
+  document.getElementById("card-new").classList.toggle("active", val === 0);
+  document.getElementById("card-resale").classList.toggle("active", val === 1);
+  document.getElementById("next4").disabled = false;
+  document.getElementById("tval-4").textContent = val === 0 ? "New Property" : "Resale Property";
+}
+
+// ── STEP NAVIGATION ──────────────────────────────────────────────
+function goTo(n) {
+  // Validate current before moving forward
+  if (n > currentStep) {
+    if (currentStep === 1) {
+      const loc = document.getElementById("location").value.trim();
+      if (!loc) { flashField("location"); return; }
+      document.getElementById("tval-1").textContent = loc;
+      document.getElementById("track-1").classList.add("done");
+    }
+    if (currentStep === 2) {
+      const area = parseFloat(document.getElementById("area").value);
+      if (!area || area <= 0) { flashField("area"); return; }
+      document.getElementById("tval-2").textContent = area.toLocaleString("en-IN") + " sq ft";
+      document.getElementById("track-2").classList.add("done");
+    }
+    if (currentStep === 3) {
+      if (!document.getElementById("bedrooms").value) return;
+      document.getElementById("track-3").classList.add("done");
+    }
+    if (currentStep === 4) {
+      if (resaleVal === "") return;
+      document.getElementById("track-4").classList.add("done");
+    }
+  }
+
+  // Hide current, show next
+  document.getElementById(`step-${currentStep}`).classList.remove("active");
+  document.getElementById(`step-${n}`).classList.add("active");
+
+  // Update progress dots
+  document.querySelectorAll(".step-dot-wrap").forEach(d => {
+    const s = parseInt(d.dataset.step);
+    d.classList.remove("active", "completed");
+    if (s === n) d.classList.add("active");
+    else if (s < n) d.classList.add("completed");
+  });
+
+  // Update tracker
+  document.querySelectorAll(".tracker-item").forEach(t => t.classList.remove("active"));
+  const activeTracker = document.getElementById(`track-${n}`);
+  if (activeTracker) activeTracker.classList.add("active");
+  if (n === 5) document.getElementById("tval-5").textContent = "Select amenities";
+
+  document.getElementById("stepCounter").textContent = `Step ${n} of 5`;
+  currentStep = n;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function flashField(id) {
+  const el = document.getElementById(id);
+  el.style.borderColor = "#e74c3c";
+  el.style.boxShadow = "0 0 0 3px rgba(231,76,60,0.15)";
+  el.focus();
+  setTimeout(() => { el.style.borderColor = ""; el.style.boxShadow = ""; }, 1500);
+}
+
+// ── PREDICT ──────────────────────────────────────────────────────
+function showError(msg) {
+  const b = document.getElementById("errorBox"); b.style.display = "block"; b.textContent = "⚠ " + msg;
+}
+function hideError() { document.getElementById("errorBox").style.display = "none"; }
+
+async function predict() {
+  hideError();
+  const location = document.getElementById("location").value.trim();
+  const area     = parseFloat(document.getElementById("area").value);
+  const bedrooms = parseInt(document.getElementById("bedrooms").value);
+  const resale   = parseInt(document.getElementById("Resale").value);
+
+  const payload = { area, location, bedrooms, Resale: resale, ...amenityState };
+
+  const btn = document.getElementById("submitBtn");
+  btn.disabled = true; btn.classList.add("loading");
+  btn.querySelector(".btn-text").textContent = "Calculating…";
+
+  try {
+    const resp = await fetch(`${API}/predict`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (!resp.ok) { const err = await resp.json(); throw new Error(err.detail || `Error ${resp.status}`); }
+    const d = await resp.json();
+    showResult(d, bedrooms);
+    document.getElementById("track-5").classList.add("done");
+    document.getElementById("tval-5").textContent = d.amenity_score + " amenities";
+  } catch(e) {
+    showError(e.message.includes("Failed to fetch") ? "Cannot reach API on localhost:8000. Is uvicorn running?" : e.message);
+  } finally {
+    btn.disabled = false; btn.classList.remove("loading");
+    btn.querySelector(".btn-text").textContent = "Estimate Price ✦";
+  }
+}
+
+function fmt(n) { return new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(n); }
+
+function showResult(d, bedrooms) {
+  document.getElementById("resPrice").textContent   = fmt(d.predicted_price_lakhs) + " L";
+  document.getElementById("resLow").textContent     = fmt(d.price_range_low);
+  document.getElementById("resHigh").textContent    = fmt(d.price_range_high);
+  document.getElementById("resPSF").textContent     = "₹" + fmt(d.price_per_sqft);
+  document.getElementById("resAmenity").textContent = d.amenity_score + " / " + amenities.length;
+  document.getElementById("resLoc").textContent     = d.location_used;
+  document.getElementById("resBed").textContent     = bedrooms + " BHK";
+  document.getElementById("resNote").textContent    = d.note;
+  const res = document.getElementById("result");
+  res.style.display = "block";
+  res.querySelector(".result-card").classList.remove("pop-in");
+  void res.querySelector(".result-card").offsetWidth;
+  res.querySelector(".result-card").classList.add("pop-in");
+  res.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function restart() {
+  // Reset all fields
+  document.getElementById("location").value = "";
+  document.getElementById("area").value = "";
+  document.getElementById("bedrooms").value = "";
+  document.getElementById("Resale").value = "";
+  resaleVal = "";
+  document.querySelectorAll(".pill-btn").forEach(b => b.classList.remove("active"));
+  document.getElementById("card-new").classList.remove("active");
+  document.getElementById("card-resale").classList.remove("active");
+  document.getElementById("next3").disabled = true;
+  document.getElementById("next4").disabled = true;
+  amenities.forEach(a => {
+    amenityState[a.key] = 0;
+    const el = document.querySelector(`.amenity-toggle[data-key="${a.key}"]`);
+    if (el) { el.classList.remove("on"); el.querySelector(".toggle-box").textContent = ""; }
+  });
+  document.getElementById("amenityScore").textContent = "0";
+  document.getElementById("result").style.display = "none";
+  // Reset tracker
+  document.querySelectorAll(".tracker-item").forEach(t => t.classList.remove("done","active"));
+  document.getElementById("track-1").classList.add("active");
+  ["1","2","3","4","5"].forEach(i => {
+    document.getElementById(`tval-${i}`).textContent = i === "1" ? "Not filled yet" : "Waiting…";
+  });
+  goTo(1);
+}
+
+// ── INIT ─────────────────────────────────────────────────────────
+buildAmenities();
+loadLocations();
+</script>
+</body>
+</html>
